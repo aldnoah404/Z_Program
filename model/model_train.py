@@ -1,7 +1,7 @@
 import torch
 import random
 import numpy as np
-from model import U_NeXt_v1
+from model import U_NeXt_v1, U_NeXt_v2, U_NeXt_v3, U_NeXt_v4
 from dataset import WSSegmentation
 import os
 import shutil
@@ -28,7 +28,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 batch_size = 8
 print('batch_size = ' + str(batch_size))
 
-epoch = 200
+epoch = 400
 print('epoch = ' + str(epoch))
 
 random_seed = random.randint(1, 100)
@@ -50,7 +50,8 @@ i_valid = 0
 # Setting up the model
 #######################################################
 
-model_test = U_NeXt_v1(in_channels=1, out_channels=1)
+# model_test = U_NeXt_v1(in_channels=1, out_channels=1)
+model_test = U_NeXt_v4(in_channels=1, out_channels=1)
 model_test.to(device)
 model_name = model_test.__class__.__name__ # 获取模型名称
 
@@ -252,8 +253,8 @@ for i in range(epoch):
                                               + '_batchsize_' + str(batch_size) + '.pth')
         valid_loss_min = valid_loss
     
-    # 每隔20个epoch保存一次模型
-    if (i + 1) % 20 == 0:
+    # 每隔50个epoch保存一次模型
+    if (i + 1) % 50 == 0:
         torch.save(model_test.state_dict(), f'./exp/{model_name}/' +
                    'checkpoint_epoch_' + str(i + 1) +
                    '_batchsize_' + str(batch_size) + '.pth')
@@ -285,16 +286,16 @@ model_test.eval()
 #   on the partial sample of the verification
 #######################################################
 
-indexs = random.sample(range(len(val_dataset)), 10)
-for index in indexs:
-    img, target = val_dataset[index]
-    img = img.unsqueeze(0).to(device)
-    with torch.no_grad():
-        pred = model_test(img)
-    pred = F.sigmoid(pred)
-    pred = pred[0][0].detach().cpu().numpy()
-    pred = threshold_predictions_p(pred, 0.3)
-    pred = pred.astype(np.uint8)
-    pred = Image.fromarray(pred)
-    plt.imshow(pred)
-    plt.show()
+# indexs = random.sample(range(len(val_dataset)), 10)
+# for index in indexs:
+#     img, target = val_dataset[index]
+#     img = img.unsqueeze(0).to(device)
+#     with torch.no_grad():
+#         pred = model_test(img)
+#     pred = F.sigmoid(pred)
+#     pred = pred[0][0].detach().cpu().numpy()
+#     pred = threshold_predictions_p(pred, 0.3)
+#     pred = pred.astype(np.uint8)
+#     pred = Image.fromarray(pred)
+#     plt.imshow(pred)
+#     plt.show()

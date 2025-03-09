@@ -1,5 +1,5 @@
 import torch
-from model import U_NeXt_v1
+from model import U_NeXt_v1,U_NeXt_v3,U_NeXt_v2,U_NeXt_v4
 from fvcore.nn import FlopCountAnalysis, parameter_count
 import json
 import os
@@ -9,7 +9,7 @@ from dataset import WSSegmentation
 
 def evaluate_model(model, dataloader, device):
     model_name = model.__class__.__name__
-    paras_path = f'./exp/{model_name}/' + 'best_sslse_epoch_' + str(200)+ '_batchsize_' + str(batch_size) + '.pth'
+    paras_path = f'./exp/{model_name}/' + 'best_sslse_epoch_' + str(400)+ '_batchsize_' + str(batch_size) + '.pth'
     model.load_state_dict(torch.load(paras_path))
 
     model.eval()
@@ -70,30 +70,34 @@ def evaluate_model(model, dataloader, device):
 
     # 更新现有信息或添加新信息
     if model_name in existing_info:
-        model_info = existing_info[model_name]
+        if "evaluation_metrics" in existing_info[model_name]:
+            model_info = existing_info[model_name]["evaluation_metrics"]
+        else:
+            model_info = {}
     else:
+        existing_info[model_name] = {}
         model_info = {}
 
     # 更新评估指标
     model_info.update({
-        "PA": PAs,
-        "Precision": Precisions,
-        "Recall": Recalls,
-        "F1": F1s,
-        "IoU": ious,
-        "Dice": dices,
-        "train_loss": train_loss,
-        "valid_loss": valid_loss
+        "PA": round(float(PAs), 6),
+        "Precision": round(float(Precisions), 6),
+        "Recall": round(float(Recalls), 6),
+        "F1": round(float(F1s), 6),
+        "IoU": round(float(ious), 6),
+        "Dice": round(float(dices), 6),
+        "train_loss": round(float(train_loss), 6),
+        "valid_loss": round(float(valid_loss), 6)
     })
 
-    existing_info[model_name] = model_info
+    existing_info[model_name]["evaluation_metrics"] = model_info
 
     # 将字典写入文件
     with open("model_info.json", "w") as f:
         json.dump(existing_info, f, indent=4)
 
 if __name__=='__main__':
-    model = U_NeXt_v1(in_channels=1, out_channels=1)
+    model = U_NeXt_v4(in_channels=1, out_channels=1)
     batch_size = 8
     num_workers = 2
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

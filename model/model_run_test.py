@@ -1,14 +1,18 @@
 import torch
-from model import U_NeXt_v1
+from model import U_NeXt_v1,U_NeXt_v3,U_NeXt_v4
 from fvcore.nn import FlopCountAnalysis, parameter_count
 import json
 import os
+import time
 
 def model_info_test(model_name="U_NeXt_v1"):
     # 创建模型实例
     model = U_NeXt_v1(in_channels=1, out_channels=1)
-    if model_name == "U_NeXt_v1":
-        model = U_NeXt_v1(in_channels=1, out_channels=1)
+    if model_name == "U_NeXt_v3":
+        model = U_NeXt_v3(in_channels=1, out_channels=1)
+    elif model_name == "U_NeXt_v4":
+        model = U_NeXt_v4(in_channels=1, out_channels=1)
+
     
     # 计算并打印模型参数数量
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -20,6 +24,16 @@ def model_info_test(model_name="U_NeXt_v1"):
     # 计算FLOPS
     flops = FlopCountAnalysis(model, input_tensor)
     print(f"模型FLOPS: {flops.total()}")
+
+    # 测量模型推理速度
+    model.eval()
+    with torch.no_grad():
+        start_time = time.time()
+        for _ in range(100):  # 运行100次前向传播
+            output_tensor = model(input_tensor)
+        end_time = time.time()
+    inference_time = (end_time - start_time) / 100  # 平均每次前向传播时间
+    print(f"模型推理时间: {inference_time:.6f} 秒")
 
     # 进行前向传播
     output_tensor = model(input_tensor)
@@ -36,15 +50,27 @@ def model_info_test(model_name="U_NeXt_v1"):
             existing_info = {}
     else:
         existing_info = {}
+    
+    # 更新现有信息或添加新信息
+    if model_name in existing_info:
+        if "construction_info" in existing_info[model_name]:
+            model_info = existing_info[model_name]["construction_info"]
+        else:
+            model_info = {}
+    else:
+        existing_info[model_name] = {}
+        model_info = {}
 
     # 将数据存储到字典中
-    model_info = {
+    model_info.update({
         "total_params": total_params,
-        "flops": flops.total()
-    }
+        "flops": flops.total(),
+        "inference_time": round(inference_time, 6)
+    })
+    
 
     # 更新现有信息或添加新信息
-    existing_info[model_name] = model_info
+    existing_info[model_name]["construction_info"] = model_info
 
     # 将字典写入文件
     with open("model_info.json", "w") as f:
@@ -52,4 +78,4 @@ def model_info_test(model_name="U_NeXt_v1"):
 
 
 if __name__ == "__main__":
-    model_info_test()
+    model_info_test(model_name="U_NeXt_v4")
